@@ -13,7 +13,7 @@ class WhisperViewPlugin {
     const embeds = this.view.dom.querySelectorAll(
       '.internal-embed.file-embed[src$=".whisper"]',
     );
-    embeds.forEach((embed) => this.replaceEmbedWithFound(embed as HTMLElement));
+    embeds.forEach((embed) => this.modifyEmbedContent(embed as HTMLElement));
   }
 
   private setupMutationObserver() {
@@ -26,14 +26,14 @@ class WhisperViewPlugin {
             if (
               element.matches('.internal-embed.file-embed[src$=".whisper"]')
             ) {
-              this.replaceEmbedWithFound(element);
+              this.modifyEmbedContent(element);
             }
             // Also check child nodes in case the embed is nested
             const childEmbeds = element.querySelectorAll(
               '.internal-embed.file-embed[src$=".whisper"]',
             );
             childEmbeds.forEach((embed) =>
-              this.replaceEmbedWithFound(embed as HTMLElement),
+              this.modifyEmbedContent(embed as HTMLElement),
             );
           }
         });
@@ -46,34 +46,40 @@ class WhisperViewPlugin {
     });
   }
 
-  private replaceEmbedWithFound(embed: HTMLElement) {
-    // Check if already replaced
-    if (embed.hasAttribute("data-whisper-replaced")) {
+  private modifyEmbedContent(embed: HTMLElement) {
+    // Check if already modified
+    if (embed.hasAttribute("data-whisper-modified")) {
       return;
     }
 
-    // Mark as replaced to avoid duplicate processing
-    embed.setAttribute("data-whisper-replaced", "true");
+    // Mark as modified to avoid duplicate processing
+    embed.setAttribute("data-whisper-modified", "true");
 
-    // Create replacement element
-    const replacement = document.createElement("div");
-    replacement.style.cssText = `
-      display: inline-block;
-      padding: 8px 12px;
-      margin: 2px;
-      background-color: var(--background-secondary);
-      border: 1px solid var(--background-modifier-border);
-      border-radius: 6px;
-      font-weight: bold;
-      color: var(--text-normal);
-      font-size: 0.9em;
-      cursor: default;
+    // Instead of replacing the entire element, just modify its content
+    // This prevents CodeMirror from trying to sync the DOM changes back to the document
+    embed.innerHTML = `
+      <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px;
+        background-color: var(--background-secondary);
+        border: 1px solid var(--background-modifier-border);
+        border-radius: 6px;
+        font-weight: bold;
+        color: var(--text-normal);
+        font-size: 0.9em;
+        min-height: 24px;
+      ">
+        FOUND
+      </div>
     `;
-    replacement.textContent = "FOUND";
-    replacement.setAttribute("contenteditable", "false");
 
-    // Replace the embed with our element
-    embed.parentNode?.replaceChild(replacement, embed);
+    // Ensure the embed container maintains its structure
+    embed.style.cssText = `
+      display: inline-block;
+      vertical-align: middle;
+    `;
   }
 
   update(update: ViewUpdate) {
