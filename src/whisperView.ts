@@ -16,6 +16,12 @@ export class WhisperView extends EditableFileView {
   }
 
   getDisplayText() {
+    if (this.file) {
+      // Extract filename from the whisper file metadata when available
+      // For now, use the file basename as fallback
+      return this.file.basename;
+    }
+
     return "Whisper";
   }
 

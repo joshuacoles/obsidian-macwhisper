@@ -72,9 +72,6 @@ export default function SolidView(props: SolidViewProps) {
       {whisperData() && (
         <>
           <div style={{ "margin-bottom": "20px", "flex-shrink": 0 }}>
-            <h3 style={{ margin: "0 0 8px 0", "font-size": "18px" }}>
-              {whisperData()!.metadata.originalMediaFilename}
-            </h3>
             <div
               style={{
                 display: "flex",
