@@ -44,6 +44,8 @@ export function createWhisperEmbedRenderer(app: App): WhisperEmbedRenderer {
           background: var(--background-primary);
           overflow: hidden;
           margin: 4px 0;
+          height: 300px;
+          text-align: left;
         `;
 
         // Render the SolidJS component

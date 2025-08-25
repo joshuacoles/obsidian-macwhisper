@@ -39,6 +39,9 @@ class WhisperViewPlugin {
         this.disposeMap.delete(embedEl);
       }
 
+      // Reset text alignment from .file-embed.mod-generic rule
+      embedEl.style.textAlign = "left";
+
       // Render the whisper component
       try {
         const dispose = await this.renderer.render(embedEl, filePath);
