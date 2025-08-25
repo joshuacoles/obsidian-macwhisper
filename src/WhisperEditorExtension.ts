@@ -1,76 +1,94 @@
-import {
-  EditorView,
-  Decoration,
-  DecorationSet,
-  ViewUpdate,
-  ViewPlugin,
-  WidgetType,
-} from "@codemirror/view";
-import { RangeSet } from "@codemirror/state";
+import { EditorView, ViewUpdate, ViewPlugin } from "@codemirror/view";
 
-class WhisperWidget extends WidgetType {
-  toDOM(): HTMLElement {
-    const div = document.createElement("div");
-    div.style.cssText = `
+class WhisperViewPlugin {
+  private observer: MutationObserver;
+
+  constructor(private view: EditorView) {
+    this.processExistingEmbeds();
+    this.setupMutationObserver();
+  }
+
+  private processExistingEmbeds() {
+    // Find all rendered embed elements that reference whisper files
+    const embeds = this.view.dom.querySelectorAll(
+      '.internal-embed.file-embed[src$=".whisper"]',
+    );
+    embeds.forEach((embed) => this.replaceEmbedWithFound(embed as HTMLElement));
+  }
+
+  private setupMutationObserver() {
+    this.observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as HTMLElement;
+            // Check if the added node is a whisper embed
+            if (
+              element.matches('.internal-embed.file-embed[src$=".whisper"]')
+            ) {
+              this.replaceEmbedWithFound(element);
+            }
+            // Also check child nodes in case the embed is nested
+            const childEmbeds = element.querySelectorAll(
+              '.internal-embed.file-embed[src$=".whisper"]',
+            );
+            childEmbeds.forEach((embed) =>
+              this.replaceEmbedWithFound(embed as HTMLElement),
+            );
+          }
+        });
+      });
+    });
+
+    this.observer.observe(this.view.dom, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  private replaceEmbedWithFound(embed: HTMLElement) {
+    // Check if already replaced
+    if (embed.hasAttribute("data-whisper-replaced")) {
+      return;
+    }
+
+    // Mark as replaced to avoid duplicate processing
+    embed.setAttribute("data-whisper-replaced", "true");
+
+    // Create replacement element
+    const replacement = document.createElement("div");
+    replacement.style.cssText = `
       display: inline-block;
-      padding: 4px 8px;
-      margin: 0 2px;
+      padding: 8px 12px;
+      margin: 2px;
       background-color: var(--background-secondary);
       border: 1px solid var(--background-modifier-border);
-      border-radius: 4px;
+      border-radius: 6px;
       font-weight: bold;
       color: var(--text-normal);
       font-size: 0.9em;
+      cursor: default;
     `;
-    div.textContent = "FOUND";
-    return div;
-  }
-}
+    replacement.textContent = "FOUND";
+    replacement.setAttribute("contenteditable", "false");
 
-function findWhisperEmbeds(view: EditorView): DecorationSet {
-  const decorations: Array<any> = [];
-  const doc = view.state.doc;
-
-  // Regex to find whisper file embeds: ![[filename.whisper]] or ![[filename.whisper|alt]]
-  const whisperEmbedRegex = /!\[\[([^|\]]+\.whisper)(?:\|[^\]]*)?\]\]/g;
-
-  for (let lineNo = 1; lineNo <= doc.lines; lineNo++) {
-    const line = doc.line(lineNo);
-    const lineText = line.text;
-    let match;
-
-    while ((match = whisperEmbedRegex.exec(lineText)) !== null) {
-      const from = line.from + match.index;
-      const to = from + match[0].length;
-
-      // Create a replacing decoration that replaces the embed with our widget
-      const decoration = Decoration.replace({
-        widget: new WhisperWidget(),
-        inclusive: true,
-        block: false,
-      });
-
-      decorations.push(decoration.range(from, to));
-    }
-  }
-
-  return RangeSet.of(decorations);
-}
-
-class WhisperViewPlugin {
-  decorations: DecorationSet;
-
-  constructor(view: EditorView) {
-    this.decorations = findWhisperEmbeds(view);
+    // Replace the embed with our element
+    embed.parentNode?.replaceChild(replacement, embed);
   }
 
   update(update: ViewUpdate) {
+    // Process any new embeds that might have been added
     if (update.docChanged || update.viewportChanged) {
-      this.decorations = findWhisperEmbeds(update.view);
+      // Small delay to let Obsidian render the embeds first
+      setTimeout(() => {
+        this.processExistingEmbeds();
+      }, 10);
     }
+  }
+
+  destroy() {
+    this.observer?.disconnect();
   }
 }
 
-export const whisperEditorExtension = ViewPlugin.fromClass(WhisperViewPlugin, {
-  decorations: (v) => v.decorations,
-});
+export const whisperEditorExtension = ViewPlugin.fromClass(WhisperViewPlugin);
