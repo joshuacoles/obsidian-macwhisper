@@ -26,5 +26,8 @@
     "format": "bun x prettier --write .",
     "version": "bun run scripts/version-bump.ts"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "jszip": "^3.10.1"
+  }
 }
