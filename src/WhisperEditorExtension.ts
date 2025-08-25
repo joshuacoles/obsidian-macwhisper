@@ -21,15 +21,20 @@ class WhisperViewPlugin {
   }
 
   private async processWhisperEmbeds() {
-    const embeds = this.view.dom.querySelectorAll(
-      '.internal-embed.file-embed[src$=".whisper"]:not([data-whisper-modified])',
-    );
+    const embeds = Array.from(
+      this.view.dom.querySelectorAll(
+        ".internal-embed.file-embed:not([data-whisper-modified])",
+      ),
+    ).filter((el) => {
+      const src = el.getAttribute("src");
+      return src && src.split("#")[0].endsWith(".whisper");
+    });
 
     for (const embed of Array.from(embeds)) {
       const embedEl = embed as HTMLElement;
       embedEl.setAttribute("data-whisper-modified", "true");
 
-      const filePath = embedEl.getAttribute("src");
+      const filePath = embedEl.getAttribute("src")?.split("#")[0];
       if (!filePath) continue;
 
       // Clean up any previous render
