@@ -1,4 +1,11 @@
-import { createResource, onCleanup, For } from "solid-js";
+import {
+  createResource,
+  onCleanup,
+  For,
+  createSignal,
+  createEffect,
+  onMount,
+} from "solid-js";
 import { WhisperFile, Transcript } from "./whisperFile";
 import styles from "./styles.module.css";
 
@@ -8,6 +15,10 @@ interface SolidViewProps {
 
 export default function SolidView(props: SolidViewProps) {
   let audioRef: HTMLAudioElement | undefined;
+  let transcriptRefs: HTMLDivElement[] = [];
+
+  const [activeTranscriptIndex, setActiveTranscriptIndex] =
+    createSignal<number>(-1);
 
   const [whisperData] = createResource(
     () => props.whisperFile,
@@ -42,10 +53,76 @@ export default function SolidView(props: SolidViewProps) {
     return Math.max(...transcripts.map((t) => t.end));
   };
 
+  const findActiveTranscriptIndex = (
+    currentTime: number,
+    transcripts: Transcript[],
+  ) => {
+    const currentTimeMs = currentTime * 1000;
+    return transcripts.findIndex(
+      (transcript) =>
+        currentTimeMs >= transcript.start && currentTimeMs <= transcript.end,
+    );
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef || !whisperData()) return;
+
+    const transcripts = whisperData()!.metadata.transcripts;
+    const newIndex = findActiveTranscriptIndex(
+      audioRef.currentTime,
+      transcripts,
+    );
+
+    if (newIndex !== activeTranscriptIndex()) {
+      setActiveTranscriptIndex(newIndex);
+    }
+  };
+
+  // Set up audio event listeners when audio element becomes available
+  createEffect(() => {
+    const audio = audioRef;
+    const data = whisperData();
+
+    if (audio && data) {
+      console.log("Setting up timeupdate listener on audio element");
+
+      const setupListener = () => {
+        audio.addEventListener("timeupdate", handleTimeUpdate);
+        console.log("Timeupdate listener attached");
+      };
+
+      if (audio.src && audio.readyState >= 1) {
+        // Audio is already ready
+        setupListener();
+      } else {
+        // Wait for audio to be ready
+        audio.addEventListener("loadeddata", setupListener, { once: true });
+      }
+
+      return () => {
+        console.log("Cleaning up timeupdate listener");
+        audio.removeEventListener("timeupdate", handleTimeUpdate);
+        audio.removeEventListener("loadeddata", setupListener);
+      };
+    }
+  });
+
+  // Auto-scroll to active transcript
+  createEffect(() => {
+    const activeIndex = activeTranscriptIndex();
+    if (activeIndex >= 0 && transcriptRefs[activeIndex]) {
+      transcriptRefs[activeIndex].scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  });
+
   onCleanup(() => {
     if (audioRef?.src) {
       URL.revokeObjectURL(audioRef.src);
     }
+    // Cleanup will be handled by the createEffect cleanup function
   });
 
   return (
@@ -92,10 +169,11 @@ export default function SolidView(props: SolidViewProps) {
           <div class={styles.transcriptContainer}>
             <div class={styles.transcriptScroll}>
               <For each={whisperData()!.metadata.transcripts}>
-                {(transcript: Transcript) => (
+                {(transcript: Transcript, index) => (
                   <div
+                    ref={(el) => (transcriptRefs[index()] = el!)}
                     onClick={() => seekToTime(transcript.start)}
-                    class={`${styles.transcriptItem} ${transcript.favorited ? styles.favorited : ""}`}
+                    class={`${styles.transcriptItem} ${transcript.favorited ? styles.favorited : ""} ${activeTranscriptIndex() === index() ? styles.activeTranscript : ""}`}
                     style={{
                       "--speaker-color": `hsl(${transcript.speaker.color * 45}, 60%, 45%)`,
                     }}

@@ -70,6 +70,12 @@
   background-color: var(--background-modifier-success-hover);
 }
 
+.transcriptItem.activeTranscript {
+  background-color: var(--background-modifier-active-hover);
+  border-left: 3px solid var(--interactive-accent);
+  padding-left: 5px;
+}
+
 .transcriptMetadata {
   display: flex;
   align-items: center;
