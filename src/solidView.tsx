@@ -62,9 +62,11 @@ export default function SolidView(props: SolidViewProps) {
         "flex-direction": "column",
       }}
     >
-      {whisperData.loading && <p>Loading whisper file...</p>}
+      {whisperData.loading && (
+        <p style={{ color: "var(--text-normal)" }}>Loading whisper file...</p>
+      )}
       {whisperData.error && (
-        <p style={{ color: "red" }}>
+        <p style={{ color: "var(--text-error)" }}>
           Error loading file: {whisperData.error.message}
         </p>
       )}
@@ -77,8 +79,8 @@ export default function SolidView(props: SolidViewProps) {
                 display: "flex",
                 "flex-wrap": "wrap",
                 gap: "16px",
-                "font-size": "13px",
-                color: "#666",
+                "font-size": "var(--font-text-size)",
+                color: "var(--text-muted)",
                 "margin-bottom": "12px",
               }}
             >
@@ -131,7 +133,7 @@ export default function SolidView(props: SolidViewProps) {
                       "margin-top": index() == 0 ? undefined : "16px",
                       padding: "4px 8px",
                       "background-color": transcript.favorited
-                        ? "#fff3cd"
+                        ? "var(--background-modifier-success-hover)"
                         : "transparent",
                       cursor: "pointer",
                       transition: "background-color 0.2s ease",
@@ -139,7 +141,8 @@ export default function SolidView(props: SolidViewProps) {
                     }}
                     onMouseEnter={(e) => {
                       if (!transcript.favorited) {
-                        e.currentTarget.style.backgroundColor = "#f8f9fa";
+                        e.currentTarget.style.backgroundColor =
+                          "var(--background-modifier-hover)";
                       }
                     }}
                     onMouseLeave={(e) => {
@@ -153,8 +156,8 @@ export default function SolidView(props: SolidViewProps) {
                         display: "flex",
                         "align-items": "center",
                         "margin-bottom": "8px",
-                        "font-size": "11px",
-                        color: "#888",
+                        "font-size": "var(--font-ui-smaller)",
+                        color: "var(--text-muted)",
                       }}
                     >
                       <span
@@ -174,7 +177,12 @@ export default function SolidView(props: SolidViewProps) {
                         <span style={{ color: "#ffc107" }}>★</span>
                       )}
                     </div>
-                    <div style={{ "font-size": "16px", "line-height": "1.6" }}>
+                    <div
+                      style={{
+                        "font-size": "var(--font-text-size)",
+                        "line-height": "var(--line-height-normal)",
+                      }}
+                    >
                       {transcript.text}
                     </div>
                   </div>
