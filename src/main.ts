@@ -13,6 +13,7 @@ import {
   initializeWhisperPostProcessor,
   whisperMarkdownPostProcessor,
 } from "./WhisperMarkdownPostProcessor";
+import { whisperEditorExtension } from "./WhisperEditorExtension";
 import "./styles.css";
 
 // Remember to rename these classes and interfaces!
@@ -36,6 +37,7 @@ export default class MyPlugin extends Plugin {
 
     initializeWhisperPostProcessor(this.app);
     this.registerMarkdownPostProcessor(whisperMarkdownPostProcessor);
+    this.registerEditorExtension(whisperEditorExtension);
 
     // This creates an icon in the left ribbon.
     const ribbonIconEl = this.addRibbonIcon(
