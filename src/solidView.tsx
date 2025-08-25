@@ -1,4 +1,4 @@
-import { createSignal, createResource, onCleanup, For } from "solid-js";
+import { createResource, onCleanup, For } from "solid-js";
 import { TFile } from "obsidian";
 import * as whisperFile from "./whisperFile";
 import { WhisperFile, Transcript } from "./whisperFile";
@@ -36,8 +36,15 @@ export default function SolidView(props: SolidViewProps) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
+  const seekToTime = (timeInMs: number) => {
+    if (audioRef) {
+      audioRef.currentTime = timeInMs / 1000;
+    }
+  };
+
+  const getTotalDuration = (transcripts: Transcript[]) => {
+    if (transcripts.length === 0) return 0;
+    return Math.max(...transcripts.map((t) => t.end));
   };
 
   onCleanup(() => {
@@ -47,16 +54,14 @@ export default function SolidView(props: SolidViewProps) {
   });
 
   return (
-    <div style={{ padding: "16px" }}>
-      <h4>Whisper Transcription</h4>
-
-      <audio
-        ref={audioRef}
-        controls
-        src={whisperData() ? createAudioUrl(whisperData()!) : undefined}
-        style={{ width: "100%", "margin-bottom": "16px" }}
-      />
-
+    <div
+      style={{
+        padding: "16px",
+        height: "100%",
+        display: "flex",
+        "flex-direction": "column",
+      }}
+    >
       {whisperData.loading && <p>Loading whisper file...</p>}
       {whisperData.error && (
         <p style={{ color: "red" }}>
@@ -65,42 +70,58 @@ export default function SolidView(props: SolidViewProps) {
       )}
 
       {whisperData() && (
-        <div>
-          <div
-            style={{
-              "margin-bottom": "16px",
-              padding: "12px",
-              border: "1px solid #ccc",
-              "border-radius": "4px",
-            }}
-          >
-            <h5 style={{ margin: "0 0 8px 0" }}>File Information</h5>
-            <p style={{ margin: "4px 0" }}>
-              <strong>Original Filename:</strong>{" "}
+        <>
+          <div style={{ "margin-bottom": "20px", "flex-shrink": 0 }}>
+            <h3 style={{ margin: "0 0 8px 0", "font-size": "18px" }}>
               {whisperData()!.metadata.originalMediaFilename}
-            </p>
-            <p style={{ margin: "4px 0" }}>
-              <strong>Language:</strong>{" "}
-              {whisperData()!.metadata.detectedLanguageRaw}
-            </p>
-            <p style={{ margin: "4px 0" }}>
-              <strong>Model:</strong> {whisperData()!.metadata.modelEngine}
-            </p>
-            <p style={{ margin: "4px 0" }}>
-              <strong>Created:</strong>{" "}
-              {formatDate(whisperData()!.metadata.dateCreated)}
-            </p>
-            <p style={{ margin: "4px 0" }}>
-              <strong>Total Segments:</strong>{" "}
-              {whisperData()!.metadata.transcripts.length}
-            </p>
-          </div>
-
-          <div>
-            <h5 style={{ "margin-bottom": "8px" }}>Transcript</h5>
+            </h3>
             <div
               style={{
-                "max-height": "400px",
+                display: "flex",
+                "flex-wrap": "wrap",
+                gap: "16px",
+                "font-size": "13px",
+                color: "#666",
+                "margin-bottom": "12px",
+              }}
+            >
+              <span>
+                <strong>Language:</strong>{" "}
+                {whisperData()!.metadata.detectedLanguageRaw}
+              </span>
+              <span>
+                <strong>Model:</strong> {whisperData()!.metadata.modelEngine}
+              </span>
+              <span>
+                <strong>Duration:</strong>{" "}
+                {formatTime(
+                  getTotalDuration(whisperData()!.metadata.transcripts),
+                )}
+              </span>
+              <span>
+                <strong>Segments:</strong>{" "}
+                {whisperData()!.metadata.transcripts.length}
+              </span>
+            </div>
+            <audio
+              ref={audioRef}
+              controls
+              src={whisperData() ? createAudioUrl(whisperData()!) : undefined}
+              style={{ width: "100%", "margin-bottom": "16px" }}
+            />
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              "flex-direction": "column",
+              "min-height": 0,
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
                 "overflow-y": "auto",
                 border: "1px solid #ccc",
                 "border-radius": "4px",
@@ -109,12 +130,25 @@ export default function SolidView(props: SolidViewProps) {
               <For each={whisperData()!.metadata.transcripts}>
                 {(transcript: Transcript) => (
                   <div
+                    onClick={() => seekToTime(transcript.start)}
                     style={{
                       padding: "8px 12px",
                       "border-bottom": "1px solid #eee",
                       "background-color": transcript.favorited
                         ? "#fff3cd"
                         : "transparent",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!transcript.favorited) {
+                        e.currentTarget.style.backgroundColor = "#f8f9fa";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!transcript.favorited) {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }
                     }}
                   >
                     <div
@@ -151,7 +185,7 @@ export default function SolidView(props: SolidViewProps) {
               </For>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
