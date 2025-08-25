@@ -5,12 +5,15 @@ import {
   createSignal,
   createEffect,
   onMount,
+  createMemo,
 } from "solid-js";
 import { WhisperFile, Transcript } from "./whisperFile";
+import { TimeRange, formatTimeFromMs } from "./timeRangeUtils";
 import styles from "./styles.module.css";
 
 interface SolidViewProps {
   whisperFile: Promise<WhisperFile>;
+  timeRange?: TimeRange;
 }
 
 export default function SolidView(props: SolidViewProps) {
@@ -24,6 +27,21 @@ export default function SolidView(props: SolidViewProps) {
     () => props.whisperFile,
     (promise: Promise<WhisperFile>) => promise,
   );
+
+  // Filter transcripts based on time range
+  const filteredTranscripts = createMemo(() => {
+    const data = whisperData();
+    if (!data || !props.timeRange) {
+      return data?.metadata.transcripts || [];
+    }
+
+    const { start, end } = props.timeRange;
+    return data.metadata.transcripts.filter(
+      (transcript) =>
+        // Include transcript if it overlaps with the time range
+        transcript.start < end && transcript.end > start,
+    );
+  });
 
   const createAudioUrl = (whisperFile: WhisperFile) => {
     const blob = new Blob([whisperFile.originalAudio], { type: "audio/wav" });
@@ -53,6 +71,13 @@ export default function SolidView(props: SolidViewProps) {
     return Math.max(...transcripts.map((t) => t.end));
   };
 
+  const getDisplayDuration = () => {
+    if (props.timeRange) {
+      return props.timeRange.end - props.timeRange.start;
+    }
+    return getTotalDuration(filteredTranscripts());
+  };
+
   const findActiveTranscriptIndex = (
     currentTime: number,
     transcripts: Transcript[],
@@ -67,7 +92,7 @@ export default function SolidView(props: SolidViewProps) {
   const handleTimeUpdate = () => {
     if (!audioRef || !whisperData()) return;
 
-    const transcripts = whisperData()!.metadata.transcripts;
+    const transcripts = filteredTranscripts();
     const newIndex = findActiveTranscriptIndex(
       audioRef.currentTime,
       transcripts,
@@ -147,15 +172,30 @@ export default function SolidView(props: SolidViewProps) {
               <span>
                 <strong>Model:</strong> {whisperData()!.metadata.modelEngine}
               </span>
+              {props.timeRange ? (
+                <>
+                  <span>
+                    <strong>Range:</strong>{" "}
+                    {formatTimeFromMs(props.timeRange.start)} -{" "}
+                    {formatTimeFromMs(props.timeRange.end)}
+                  </span>
+                  <span>
+                    <strong>Duration:</strong>{" "}
+                    {formatTime(getDisplayDuration())}
+                  </span>
+                </>
+              ) : (
+                <span>
+                  <strong>Duration:</strong>{" "}
+                  {formatTime(
+                    getTotalDuration(whisperData()!.metadata.transcripts),
+                  )}
+                </span>
+              )}
               <span>
-                <strong>Duration:</strong>{" "}
-                {formatTime(
-                  getTotalDuration(whisperData()!.metadata.transcripts),
-                )}
-              </span>
-              <span>
-                <strong>Segments:</strong>{" "}
-                {whisperData()!.metadata.transcripts.length}
+                <strong>Segments:</strong> {filteredTranscripts().length}
+                {props.timeRange &&
+                  ` (of ${whisperData()!.metadata.transcripts.length})`}
               </span>
             </div>
             <audio
@@ -168,7 +208,7 @@ export default function SolidView(props: SolidViewProps) {
 
           <div class={styles.transcriptContainer}>
             <div class={styles.transcriptScroll}>
-              <For each={whisperData()!.metadata.transcripts}>
+              <For each={filteredTranscripts()}>
                 {(transcript: Transcript, index) => (
                   <div
                     ref={(el) => (transcriptRefs[index()] = el!)}

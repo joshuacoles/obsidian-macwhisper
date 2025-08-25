@@ -34,8 +34,8 @@ class WhisperViewPlugin {
       const embedEl = embed as HTMLElement;
       embedEl.setAttribute("data-whisper-modified", "true");
 
-      const filePath = embedEl.getAttribute("src")?.split("#")[0];
-      if (!filePath) continue;
+      const src = embedEl.getAttribute("src");
+      if (!src) continue;
 
       // Clean up any previous render
       const previousDispose = this.disposeMap.get(embedEl);
@@ -47,9 +47,9 @@ class WhisperViewPlugin {
       // Reset text alignment from .file-embed.mod-generic rule
       embedEl.style.textAlign = "left";
 
-      // Render the whisper component
+      // Render the whisper component with full src (including time range)
       try {
-        const dispose = await this.renderer.render(embedEl, filePath);
+        const dispose = await this.renderer.render(embedEl, src);
         this.disposeMap.set(embedEl, dispose);
       } catch (error) {
         console.error("Error rendering whisper embed:", error);

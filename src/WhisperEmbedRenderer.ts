@@ -2,18 +2,19 @@ import { App, TFile } from "obsidian";
 import { render } from "solid-js/web";
 import SolidView from "./solidView";
 import * as whisperFile from "./whisperFile";
+import { parseEmbedSrc, TimeRange, formatTimeFromMs } from "./timeRangeUtils";
 
 export interface WhisperEmbedRenderer {
-  render: (container: HTMLElement, filePath: string) => Promise<() => void>;
+  render: (container: HTMLElement, src: string) => Promise<() => void>;
 }
 
 export function createWhisperEmbedRenderer(app: App): WhisperEmbedRenderer {
   return {
-    async render(
-      container: HTMLElement,
-      filePath: string,
-    ): Promise<() => void> {
+    async render(container: HTMLElement, src: string): Promise<() => void> {
       try {
+        // Parse the src to extract file path and optional time range
+        const { filePath, timeRange } = parseEmbedSrc(src);
+
         // Resolve the file path to a TFile
         const file = app.metadataCache.getFirstLinkpathDest(filePath, "");
 
@@ -24,8 +25,10 @@ export function createWhisperEmbedRenderer(app: App): WhisperEmbedRenderer {
         }
 
         // Create loading indicator
-        container.innerHTML =
-          '<div style="padding: 12px; text-align: center; color: var(--text-muted);">Loading whisper file...</div>';
+        const loadingText = timeRange
+          ? `Loading whisper file (${formatTimeFromMs(timeRange.start)}-${formatTimeFromMs(timeRange.end)})...`
+          : "Loading whisper file...";
+        container.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--text-muted);">${loadingText}</div>`;
 
         // Read and parse the whisper file
         const contents = await app.vault.readBinary(file);
@@ -50,7 +53,7 @@ export function createWhisperEmbedRenderer(app: App): WhisperEmbedRenderer {
 
         // Render the SolidJS component
         const dispose = render(
-          () => SolidView({ whisperFile: whisperFilePromise }),
+          () => SolidView({ whisperFile: whisperFilePromise, timeRange }),
           container,
         );
 
