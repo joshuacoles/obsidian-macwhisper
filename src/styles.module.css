@@ -1,0 +1,98 @@
+.container {
+  padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.loadingText {
+  color: var(--text-normal);
+}
+
+.errorText {
+  color: var(--text-error);
+}
+
+.headerSection {
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: var(--font-text-size);
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.audioPlayer {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.transcriptContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.transcriptScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 4px;
+}
+
+.transcriptItem {
+  padding: 4px 8px;
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+
+.transcriptItem:first-child {
+  margin-top: 0;
+}
+
+.transcriptItem:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.transcriptItem.favorited {
+  background-color: var(--background-modifier-success-hover);
+}
+
+.transcriptItem.favorited:hover {
+  background-color: var(--background-modifier-success-hover);
+}
+
+.transcriptMetadata {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.speakerName {
+  color: var(--speaker-color);
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.timestamp {
+  margin-right: 8px;
+}
+
+.favoriteStar {
+  color: #ffc107;
+}
+
+.transcriptText {
+  font-size: var(--font-text-size);
+  line-height: var(--line-height-normal);
+}

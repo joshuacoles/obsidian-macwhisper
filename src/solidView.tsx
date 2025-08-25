@@ -1,5 +1,6 @@
 import { createResource, onCleanup, For } from "solid-js";
 import { WhisperFile, Transcript } from "./whisperFile";
+import styles from "./styles.module.css";
 
 interface SolidViewProps {
   whisperFile: Promise<WhisperFile>;
@@ -48,36 +49,20 @@ export default function SolidView(props: SolidViewProps) {
   });
 
   return (
-    <div
-      style={{
-        padding: "16px",
-        height: "100%",
-        display: "flex",
-        "flex-direction": "column",
-      }}
-    >
+    <div class={styles.container}>
       {whisperData.loading && (
-        <p style={{ color: "var(--text-normal)" }}>Loading whisper file...</p>
+        <p class={styles.loadingText}>Loading whisper file...</p>
       )}
       {whisperData.error && (
-        <p style={{ color: "var(--text-error)" }}>
+        <p class={styles.errorText}>
           Error loading file: {whisperData.error.message}
         </p>
       )}
 
       {whisperData() && (
         <>
-          <div style={{ "margin-bottom": "20px", "flex-shrink": 0 }}>
-            <div
-              style={{
-                display: "flex",
-                "flex-wrap": "wrap",
-                gap: "16px",
-                "font-size": "var(--font-text-size)",
-                color: "var(--text-muted)",
-                "margin-bottom": "12px",
-              }}
-            >
+          <div class={styles.headerSection}>
+            <div class={styles.metadata}>
               <span>
                 <strong>Language:</strong>{" "}
                 {whisperData()!.metadata.detectedLanguageRaw}
@@ -100,85 +85,34 @@ export default function SolidView(props: SolidViewProps) {
               ref={audioRef}
               controls
               src={whisperData() ? createAudioUrl(whisperData()!) : undefined}
-              style={{ width: "100%", "margin-bottom": "16px" }}
+              class={styles.audioPlayer}
             />
           </div>
 
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              "flex-direction": "column",
-              "min-height": 0,
-            }}
-          >
-            <div
-              style={{
-                flex: 1,
-                "overflow-y": "auto",
-                padding: "0 4px",
-              }}
-            >
+          <div class={styles.transcriptContainer}>
+            <div class={styles.transcriptScroll}>
               <For each={whisperData()!.metadata.transcripts}>
-                {(transcript: Transcript, index) => (
+                {(transcript: Transcript) => (
                   <div
                     onClick={() => seekToTime(transcript.start)}
+                    class={`${styles.transcriptItem} ${transcript.favorited ? styles.favorited : ""}`}
                     style={{
-                      "margin-top": index() == 0 ? undefined : "16px",
-                      padding: "4px 8px",
-                      "background-color": transcript.favorited
-                        ? "var(--background-modifier-success-hover)"
-                        : "transparent",
-                      cursor: "pointer",
-                      transition: "background-color 0.2s ease",
-                      "border-radius": "4px",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!transcript.favorited) {
-                        e.currentTarget.style.backgroundColor =
-                          "var(--background-modifier-hover)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!transcript.favorited) {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                      }
+                      "--speaker-color": `hsl(${transcript.speaker.color * 45}, 60%, 45%)`,
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        "align-items": "center",
-                        "margin-bottom": "8px",
-                        "font-size": "var(--font-ui-smaller)",
-                        color: "var(--text-muted)",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: `hsl(${transcript.speaker.color * 45}, 60%, 45%)`,
-                          "font-weight": "500",
-                          "margin-right": "8px",
-                        }}
-                      >
+                    <div class={styles.transcriptMetadata}>
+                      <span class={styles.speakerName}>
                         {transcript.speaker.name}
                       </span>
-                      <span style={{ "margin-right": "8px" }}>
+                      <span class={styles.timestamp}>
                         {formatTime(transcript.start)} -{" "}
                         {formatTime(transcript.end)}
                       </span>
                       {transcript.favorited && (
-                        <span style={{ color: "#ffc107" }}>★</span>
+                        <span class={styles.favoriteStar}>★</span>
                       )}
                     </div>
-                    <div
-                      style={{
-                        "font-size": "var(--font-text-size)",
-                        "line-height": "var(--line-height-normal)",
-                      }}
-                    >
-                      {transcript.text}
-                    </div>
+                    <div class={styles.transcriptText}>{transcript.text}</div>
                   </div>
                 )}
               </For>
