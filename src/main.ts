@@ -8,6 +8,7 @@ import {
   PluginSettingTab,
   Setting,
 } from "obsidian";
+import { WHISPER_VIEW_TYPE, WhisperView } from "./whisperView";
 
 // Remember to rename these classes and interfaces!
 
@@ -24,6 +25,9 @@ export default class MyPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
+
+    this.registerExtensions(["whisper"], WHISPER_VIEW_TYPE);
+    this.registerView(WHISPER_VIEW_TYPE, (leaf) => new WhisperView(leaf));
 
     // This creates an icon in the left ribbon.
     const ribbonIconEl = this.addRibbonIcon(
