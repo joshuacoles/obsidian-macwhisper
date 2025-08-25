@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import chokidar from "chokidar";
 import { exists, rm } from "node:fs/promises";
+import { SolidPlugin } from "bun-plugin-solid";
 
 const DIST_DIR = "dist";
 const IS_DEV = process.argv.includes("--dev");
@@ -23,6 +24,7 @@ For more information about this plugin, [look it up in Obsidian](obsidian://show
   // Build main plugin file
   const result = await Bun.build({
     entrypoints: ["./src/main.ts"],
+    plugins: [SolidPlugin()],
     outdir: pluginDir,
     minify: !IS_DEV,
     sourcemap: IS_DEV ? "external" : "none",
