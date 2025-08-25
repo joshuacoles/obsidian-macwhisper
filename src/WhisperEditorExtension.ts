@@ -1,23 +1,54 @@
 import { EditorView, ViewUpdate, ViewPlugin } from "@codemirror/view";
+import { App } from "obsidian";
+import {
+  createWhisperEmbedRenderer,
+  WhisperEmbedRenderer,
+} from "./WhisperEmbedRenderer";
 
 class WhisperViewPlugin {
   private observer: MutationObserver;
+  private renderer: WhisperEmbedRenderer;
+  private disposeMap = new Map<HTMLElement, () => void>();
 
-  constructor(private view: EditorView) {
+  constructor(
+    private view: EditorView,
+    private app: App,
+  ) {
+    this.renderer = createWhisperEmbedRenderer(app);
     this.processWhisperEmbeds();
     this.observer = new MutationObserver(() => this.processWhisperEmbeds());
     this.observer.observe(this.view.dom, { childList: true, subtree: true });
   }
 
-  private processWhisperEmbeds() {
+  private async processWhisperEmbeds() {
     const embeds = this.view.dom.querySelectorAll(
       '.internal-embed.file-embed[src$=".whisper"]:not([data-whisper-modified])',
     );
-    embeds.forEach((embed) => {
-      embed.setAttribute("data-whisper-modified", "true");
-      (embed as HTMLElement).innerHTML =
-        '<div style="padding: 8px 12px; background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 6px; font-weight: bold; text-align: center;">FOUND</div>';
-    });
+
+    for (const embed of Array.from(embeds)) {
+      const embedEl = embed as HTMLElement;
+      embedEl.setAttribute("data-whisper-modified", "true");
+
+      const filePath = embedEl.getAttribute("src");
+      if (!filePath) continue;
+
+      // Clean up any previous render
+      const previousDispose = this.disposeMap.get(embedEl);
+      if (previousDispose) {
+        previousDispose();
+        this.disposeMap.delete(embedEl);
+      }
+
+      // Render the whisper component
+      try {
+        const dispose = await this.renderer.render(embedEl, filePath);
+        this.disposeMap.set(embedEl, dispose);
+      } catch (error) {
+        console.error("Error rendering whisper embed:", error);
+        embedEl.innerHTML =
+          '<div style="padding: 8px; color: var(--text-error);">Error loading whisper file</div>';
+      }
+    }
   }
 
   update(update: ViewUpdate) {
@@ -28,7 +59,14 @@ class WhisperViewPlugin {
 
   destroy() {
     this.observer.disconnect();
+    // Clean up all SolidJS components
+    this.disposeMap.forEach((dispose) => dispose());
+    this.disposeMap.clear();
   }
 }
 
-export const whisperEditorExtension = ViewPlugin.fromClass(WhisperViewPlugin);
+export function createWhisperEditorExtension(app: App) {
+  return ViewPlugin.define(
+    (view: EditorView) => new WhisperViewPlugin(view, app),
+  );
+}

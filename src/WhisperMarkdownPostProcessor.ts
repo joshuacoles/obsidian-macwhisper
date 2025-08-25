@@ -1,13 +1,15 @@
+import { type MarkdownPostProcessorContext, type App, TFile } from "obsidian";
 import {
-  type MarkdownPostProcessorContext,
-  type MetadataCache,
-  TFile,
-} from "obsidian";
+  createWhisperEmbedRenderer,
+  WhisperEmbedRenderer,
+} from "./WhisperEmbedRenderer";
 
-let metadataCache: MetadataCache;
+let app: App;
+let renderer: WhisperEmbedRenderer;
 
-export function initializeWhisperPostProcessor(app: any) {
-  metadataCache = app.metadataCache;
+export function initializeWhisperPostProcessor(appInstance: App) {
+  app = appInstance;
+  renderer = createWhisperEmbedRenderer(app);
 }
 
 export async function whisperMarkdownPostProcessor(
@@ -18,17 +20,25 @@ export async function whisperMarkdownPostProcessor(
   const embeddedItems = el.querySelectorAll(".internal-embed");
   if (embeddedItems.length === 0) return;
 
-  embeddedItems.forEach((embed) => {
+  for (const embed of Array.from(embeddedItems)) {
     const fname = embed.getAttribute("src")?.split("#")[0];
-    if (!fname) return;
+    if (!fname) continue;
 
-    const file = metadataCache.getFirstLinkpathDest(fname, ctx.sourcePath);
+    const file = app.metadataCache.getFirstLinkpathDest(fname, ctx.sourcePath);
     if (file && file instanceof TFile && file.extension === "whisper") {
-      const foundDiv = document.createElement("div");
-      foundDiv.style.cssText =
-        "padding: 10px; text-align: center; font-weight: bold;";
-      foundDiv.textContent = "FOUND";
-      embed.parentElement?.replaceChild(foundDiv, embed);
+      // Create a container for the whisper component
+      const container = document.createElement("div");
+
+      try {
+        // Render the whisper component
+        await renderer.render(container, fname);
+        embed.parentElement?.replaceChild(container, embed);
+      } catch (error) {
+        console.error("Error rendering whisper embed in reading mode:", error);
+        container.innerHTML =
+          '<div style="padding: 8px; color: var(--text-error);">Error loading whisper file</div>';
+        embed.parentElement?.replaceChild(container, embed);
+      }
     }
-  });
+  }
 }
