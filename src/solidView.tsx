@@ -156,7 +156,7 @@ export default function SolidView(props: SolidViewProps) {
                     >
                       <span
                         style={{
-                          color: `hsl(${transcript.speaker.color}, 60%, 45%)`,
+                          color: `hsl(${transcript.speaker.color * 45}, 60%, 45%)`,
                           "font-weight": "500",
                           "margin-right": "8px",
                         }}
