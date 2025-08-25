@@ -9,6 +9,7 @@ import {
   Setting,
 } from "obsidian";
 import { WHISPER_VIEW_TYPE, WhisperView } from "./whisperView";
+import "./styles.css";
 
 // Remember to rename these classes and interfaces!
 

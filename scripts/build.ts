@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import chokidar from "chokidar";
-import { exists, rm } from "node:fs/promises";
+import { exists, rm, rename } from "node:fs/promises";
 import { SolidPlugin } from "bun-plugin-solid";
 
 const DIST_DIR = "dist";
@@ -44,9 +44,6 @@ For more information about this plugin, [look it up in Obsidian](obsidian://show
       "@lezer/lr",
     ],
     format: "cjs",
-    naming: {
-      entry: "main.js",
-    },
     banner,
   });
 
@@ -60,9 +57,11 @@ For more information about this plugin, [look it up in Obsidian](obsidian://show
 
   // Copy styles if they exist
   try {
-    await Bun.write(join(pluginDir, "styles.css"), Bun.file("styles.css"));
+    if (await exists(join(pluginDir, "main.css"))) {
+      await rename(join(pluginDir, "main.css"), join(pluginDir, "styles.css"));
+    }
   } catch {
-    console.log("No styles.css found, skipping...");
+    console.log("No CSS output found, skipping...");
   }
 
   // Touch .hotreload
