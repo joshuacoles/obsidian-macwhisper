@@ -9,6 +9,10 @@ import {
   Setting,
 } from "obsidian";
 import { WHISPER_VIEW_TYPE, WhisperView } from "./whisperView";
+import {
+  initializeWhisperPostProcessor,
+  whisperMarkdownPostProcessor,
+} from "./WhisperMarkdownPostProcessor";
 import "./styles.css";
 
 // Remember to rename these classes and interfaces!
@@ -29,6 +33,9 @@ export default class MyPlugin extends Plugin {
 
     this.registerExtensions(["whisper"], WHISPER_VIEW_TYPE);
     this.registerView(WHISPER_VIEW_TYPE, (leaf) => new WhisperView(leaf));
+
+    initializeWhisperPostProcessor(this.app);
+    this.registerMarkdownPostProcessor(whisperMarkdownPostProcessor);
 
     // This creates an icon in the left ribbon.
     const ribbonIconEl = this.addRibbonIcon(
