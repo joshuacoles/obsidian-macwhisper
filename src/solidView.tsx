@@ -1,22 +1,16 @@
 import { createResource, onCleanup, For } from "solid-js";
-import { TFile } from "obsidian";
-import * as whisperFile from "./whisperFile";
 import { WhisperFile, Transcript } from "./whisperFile";
 
 interface SolidViewProps {
-  file: TFile;
-  vault: any;
+  whisperFile: Promise<WhisperFile>;
 }
 
 export default function SolidView(props: SolidViewProps) {
   let audioRef: HTMLAudioElement | undefined;
 
   const [whisperData] = createResource(
-    () => props.file,
-    async (file: TFile) => {
-      const contents = await props.vault.readBinary(file);
-      return whisperFile.parse(contents);
-    },
+    () => props.whisperFile,
+    (promise: Promise<WhisperFile>) => promise,
   );
 
   const createAudioUrl = (whisperFile: WhisperFile) => {

@@ -1,6 +1,7 @@
 import { EditableFileView, TFile, type WorkspaceLeaf } from "obsidian";
 import { render } from "solid-js/web";
 import SolidView from "./solidView";
+import * as whisperFile from "./whisperFile";
 
 export const WHISPER_VIEW_TYPE = "whisper-view";
 
@@ -39,8 +40,13 @@ export class WhisperView extends EditableFileView {
     const container = this.containerEl.children[1];
     container.empty();
 
+    // Create a promise for the whisper file data
+    const whisperFilePromise = this.app.vault
+      .readBinary(file)
+      .then((contents) => whisperFile.parse(contents));
+
     this.dispose = render(
-      () => SolidView({ file, vault: this.app.vault }),
+      () => SolidView({ whisperFile: whisperFilePromise }),
       container,
     );
   }
