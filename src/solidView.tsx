@@ -123,22 +123,22 @@ export default function SolidView(props: SolidViewProps) {
               style={{
                 flex: 1,
                 "overflow-y": "auto",
-                border: "1px solid #ccc",
-                "border-radius": "4px",
+                padding: "0 4px",
               }}
             >
               <For each={whisperData()!.metadata.transcripts}>
-                {(transcript: Transcript) => (
+                {(transcript: Transcript, index) => (
                   <div
                     onClick={() => seekToTime(transcript.start)}
                     style={{
-                      padding: "8px 12px",
-                      "border-bottom": "1px solid #eee",
+                      "margin-top": index() == 0 ? undefined : "16px",
+                      padding: "4px 8px",
                       "background-color": transcript.favorited
                         ? "#fff3cd"
                         : "transparent",
                       cursor: "pointer",
                       transition: "background-color 0.2s ease",
+                      "border-radius": "4px",
                     }}
                     onMouseEnter={(e) => {
                       if (!transcript.favorited) {
@@ -155,15 +155,15 @@ export default function SolidView(props: SolidViewProps) {
                       style={{
                         display: "flex",
                         "align-items": "center",
-                        "margin-bottom": "4px",
-                        "font-size": "12px",
-                        color: "#666",
+                        "margin-bottom": "8px",
+                        "font-size": "11px",
+                        color: "#888",
                       }}
                     >
                       <span
                         style={{
-                          color: `hsl(${transcript.speaker.color}, 70%, 50%)`,
-                          "font-weight": "bold",
+                          color: `hsl(${transcript.speaker.color}, 60%, 45%)`,
+                          "font-weight": "500",
                           "margin-right": "8px",
                         }}
                       >
@@ -177,7 +177,7 @@ export default function SolidView(props: SolidViewProps) {
                         <span style={{ color: "#ffc107" }}>★</span>
                       )}
                     </div>
-                    <div style={{ "font-size": "14px", "line-height": "1.4" }}>
+                    <div style={{ "font-size": "16px", "line-height": "1.6" }}>
                       {transcript.text}
                     </div>
                   </div>
