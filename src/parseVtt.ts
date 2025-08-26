@@ -39,8 +39,8 @@ function extractSpeaker(text: string): { speaker?: string; cleanText: string } {
 }
 
 function isEmptyLine(line: string): boolean {
-  const cleanLine = stripHtmlTags(line);
-  return cleanLine === "" || cleanLine === " ";
+  // Check if line contains only whitespace (including various line endings)
+  return /^\s*$/.test(line);
 }
 
 function isTimestampLine(line: string): boolean {
@@ -99,22 +99,24 @@ function parseVttLines(lines: string[]): Omit<VttSection, "words">[] {
   let current: Partial<Omit<VttSection, "words">> = {};
   let inSection = false;
 
-  for (const [index, line] of lines.entries()) {
+  for (const line of lines) {
     if (isEmptyLine(line)) {
+      // Empty line marks end of a section
+      if (inSection && current.start !== undefined) {
+        sections.push(current as Omit<VttSection, "words">);
+        current = {};
+        inSection = false;
+      }
       continue;
     }
 
     if (isTimestampLine(line)) {
+      // Start of a new section
       inSection = true;
-
-      if (current.start !== undefined) {
-        sections.push(current as Omit<VttSection, "words">);
-      }
-
       const timestamp = parseTimestamp(line);
       current = { ...timestamp, part: "", speaker: undefined };
     } else if (inSection) {
-      const isLastLine = index === lines.length - 1;
+      // Content line within a section
       const { speaker, cleanText } = extractSpeaker(line);
       const cleanLine = stripHtmlTags(cleanText);
 
@@ -133,12 +135,12 @@ function parseVttLines(lines: string[]): Omit<VttSection, "words">[] {
 
       // Use cleanText instead of original line to remove speaker tags
       current.part = current.part ? `${current.part} ${cleanText}` : cleanText;
-
-      if (isLastLine || sections.length === 0) {
-        sections.push({ ...current } as Omit<VttSection, "words">);
-        current = { part: "", speaker: undefined };
-      }
     }
+  }
+
+  // Push final section if exists
+  if (inSection && current.start !== undefined) {
+    sections.push(current as Omit<VttSection, "words">);
   }
 
   return sections;
