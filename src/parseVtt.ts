@@ -1,133 +1,161 @@
 // Originally from: https://github.com/joegesualdo/vtt-to-json, licensed MIT © Joe Gesualdo
 // Vendored: 2025-08-26
 
-function convertVttToJson(vttString) {
-  return new Promise((resolve, reject) => {
-    var current = {};
-    var sections = [];
-    var start = false;
-    var vttArray = vttString.split("\n");
-    vttArray.forEach((line, index) => {
-      if (line.replace(/<\/?[^>]+(>|$)/g, "") === " ") {
-      } else if (line.replace(/<\/?[^>]+(>|$)/g, "") == "") {
-      } else if (line.indexOf("-->") !== -1) {
-        start = true;
+export interface VttWord {
+  word: string;
+  time: number | undefined;
+}
 
-        if (current.start) {
-          sections.push(clone(current));
-        }
+export interface VttSection {
+  start: number;
+  end: number;
+  part: string;
+  words: VttWord[];
+}
 
-        current = {
-          start: timeString2ms(
-            line.split("-->")[0].trimRight().split(" ").pop(),
-          ),
-          end: timeString2ms(
-            line.split("-->")[1].trimLeft().split(" ").shift(),
-          ),
-          part: "",
-        };
-      } else if (line.replace(/<\/?[^>]+(>|$)/g, "") === "") {
-      } else if (line.replace(/<\/?[^>]+(>|$)/g, "") === " ") {
-      } else {
-        if (start) {
-          if (sections.length !== 0) {
-            if (
-              sections[sections.length - 1].part.replace(
-                /<\/?[^>]+(>|$)/g,
-                "",
-              ) === line.replace(/<\/?[^>]+(>|$)/g, "")
-            ) {
-            } else {
-              if (current.part.length === 0) {
-                current.part = line;
-              } else {
-                current.part = `${current.part} ${line}`;
-              }
-              // If it's the last line of the subtitles
-              if (index === vttArray.length - 1) {
-                sections.push(clone(current));
-              }
-            }
-          } else {
-            current.part = line;
-            sections.push(clone(current));
-            current.part = "";
-          }
-        }
+// Constants for regex patterns and magic strings
+const HTML_TAG_REGEX = /<\/?[^>]+(>|$)/g;
+const TIME_MARKER_REGEX = /(<([0-9:.>]+)>)/gi;
+const TIME_SEPARATOR = "-->";
+const TIME_MARKER_PREFIX = "==";
+const EMPTY_STRINGS = new Set(["", " ", "##"]);
+
+// Utility functions
+function stripHtmlTags(text: string): string {
+  return text.replace(HTML_TAG_REGEX, "");
+}
+
+function isEmptyLine(line: string): boolean {
+  const cleanLine = stripHtmlTags(line);
+  return cleanLine === "" || cleanLine === " ";
+}
+
+function isTimestampLine(line: string): boolean {
+  return line.includes(TIME_SEPARATOR);
+}
+
+function parseTimestamp(line: string): { start: number; end: number } {
+  const [startTime, endTime] = line.split(TIME_SEPARATOR).map((s) => s.trim());
+  return {
+    start: timeString2ms(startTime.split(" ").pop() || ""),
+    end: timeString2ms(endTime.split(" ").shift() || ""),
+  };
+}
+
+function parseWordsWithTimestamps(text: string): VttWord[] {
+  const processedText = text
+    .split(" ")
+    .map((word) =>
+      word.replace(
+        TIME_MARKER_REGEX,
+        (match) =>
+          `${TIME_MARKER_PREFIX}${match.replace("<", "").replace(">", "")}`,
+      ),
+    )
+    .join(" ");
+
+  const cleanText = stripHtmlTags(processedText);
+
+  return cleanText
+    .split(" ")
+    .filter((word) => word.length > 0)
+    .map(parseWordWithTime)
+    .filter((word): word is VttWord => word !== null);
+}
+
+function parseWordWithTime(item: string): VttWord | null {
+  if (item.includes(TIME_MARKER_PREFIX)) {
+    const [word, timeStr] = item.split(TIME_MARKER_PREFIX);
+    if (EMPTY_STRINGS.has(word)) {
+      return null;
+    }
+    return {
+      word: cleanWord(word),
+      time: timeString2ms(timeStr),
+    };
+  }
+
+  return {
+    word: cleanWord(item),
+    time: undefined,
+  };
+}
+
+function parseVttLines(lines: string[]): Omit<VttSection, "words">[] {
+  const sections: Array<Omit<VttSection, "words">> = [];
+  let current: Partial<Omit<VttSection, "words">> = {};
+  let inSection = false;
+
+  for (const [index, line] of lines.entries()) {
+    if (isEmptyLine(line)) {
+      continue;
+    }
+
+    if (isTimestampLine(line)) {
+      inSection = true;
+
+      if (current.start !== undefined) {
+        sections.push(current as Omit<VttSection, "words">);
       }
-    });
 
-    current = [];
+      const timestamp = parseTimestamp(line);
+      current = { ...timestamp, part: "" };
+    } else if (inSection) {
+      const isLastLine = index === lines.length - 1;
+      const cleanLine = stripHtmlTags(line);
 
-    var regex = /(<([0-9:.>]+)>)/gi;
-    sections.forEach((section) => {
-      strs = section.part.split();
-      var results = strs.map(function (s) {
-        return s.replace(regex, function (n) {
-          return n.split("").reduce(function (s, i) {
-            return `==${n.replace("<", "").replace(">", "")}`;
-          }, 0);
-        });
-      });
-      cleanText = results[0].replace(/<\/?[^>]+(>|$)/g, "");
-      cleanArray = cleanText.split(" ");
-      resultsArray = [];
-      cleanArray.forEach(function (item) {
-        if (item.indexOf("==") > -1) {
-          var pair = item.split("==");
-          var key = pair[0];
-          var value = pair[1];
-          if (key == "" || key == "##") {
-            return;
-          }
-          resultsArray.push({
-            word: cleanWord(item.split("==")[0]),
-            time: timeString2ms(item.split("==")[1]),
-          });
-        } else {
-          resultsArray.push({
-            word: cleanWord(item),
-            time: undefined,
-          });
-        }
-      });
-      section.words = resultsArray;
-      section.part = section.part.replace(/<\/?[^>]+(>|$)/g, "");
-    });
-    resolve(sections);
-  });
+      // Skip duplicate lines
+      if (
+        sections.length > 0 &&
+        stripHtmlTags(sections[sections.length - 1].part) === cleanLine
+      ) {
+        continue;
+      }
+
+      current.part = current.part ? `${current.part} ${line}` : line;
+
+      if (isLastLine || sections.length === 0) {
+        sections.push({ ...current } as Omit<VttSection, "words">);
+        current = { part: "" };
+      }
+    }
+  }
+
+  return sections;
 }
 
-// helpers
-//   http://codereview.stackexchange.com/questions/45335/milliseconds-to-time-string-time-string-to-milliseconds
-function timeString2ms(a, b) {
-  // time(HH:MM:SS.mss) // optimized
-  return (
-    (a = a.split(".")), // optimized
-    (b = a[1] * 1 || 0), // optimized
-    (a = a[0].split(":")),
-    b +
-      (a[2]
-        ? a[0] * 3600 + a[1] * 60 + a[2] * 1
-        : a[1]
-          ? a[0] * 60 + a[1] * 1
-          : a[0] * 1) *
-        1e3
-  ); // optimized
+export function convertVttToJson(vttString: string): VttSection[] {
+  if (!vttString?.trim()) {
+    return [];
+  }
+
+  const lines = vttString.split("\n");
+  const sections = parseVttLines(lines);
+
+  return sections.map((section) => ({
+    ...section,
+    words: parseWordsWithTimestamps(section.part),
+    part: stripHtmlTags(section.part),
+  }));
 }
 
-// removes everything but characters and apostrophe and dash
-function cleanWord(word) {
+function timeString2ms(timeString: string): number {
+  const parts = timeString.split(".");
+  const milliseconds = parseInt(parts[1]) || 0;
+  const timeParts = parts[0].split(":").map(Number);
+
+  if (timeParts.length === 3) {
+    return (
+      milliseconds +
+      (timeParts[0] * 3600 + timeParts[1] * 60 + timeParts[2]) * 1000
+    );
+  } else if (timeParts.length === 2) {
+    return milliseconds + (timeParts[0] * 60 + timeParts[1]) * 1000;
+  } else {
+    return milliseconds + timeParts[0] * 1000;
+  }
+}
+
+function cleanWord(word: string): string {
   return word.replace(/[^0-9a-z'-]/gi, "").toLowerCase();
 }
-
-function clone(obj) {
-  if (null == obj || "object" != typeof obj) return obj;
-  var copy = obj.constructor();
-  for (var attr in obj) {
-    if (obj.hasOwnProperty(attr)) copy[attr] = obj[attr];
-  }
-  return copy;
-}
-
-module.exports = convertVttToJson;
