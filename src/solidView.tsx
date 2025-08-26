@@ -4,7 +4,6 @@ import {
   For,
   createSignal,
   createEffect,
-  onMount,
   createMemo,
 } from "solid-js";
 import { WhisperFile, Transcript } from "./whisperFile";
@@ -18,7 +17,7 @@ interface SolidViewProps {
 
 export default function SolidView(props: SolidViewProps) {
   let audioRef: HTMLAudioElement | undefined;
-  let transcriptRefs: HTMLDivElement[] = [];
+  const transcriptRefs: HTMLDivElement[] = [];
 
   const [activeTranscriptIndex, setActiveTranscriptIndex] =
     createSignal<number>(-1);

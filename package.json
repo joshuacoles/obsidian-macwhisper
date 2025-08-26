@@ -20,7 +20,7 @@
   },
   "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
   "scripts": {
-    "lint": "bun x eslint .",
+    "lint": "bun x eslint src",
     "dev": "bun run scripts/build.ts --dev",
     "link": "bun run scripts/link.ts",
     "build": "bun run scripts/build.ts",

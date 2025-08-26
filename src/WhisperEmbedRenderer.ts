@@ -2,7 +2,7 @@ import { App, TFile } from "obsidian";
 import { render } from "solid-js/web";
 import SolidView from "./solidView";
 import * as whisperFile from "./whisperFile";
-import { parseEmbedSrc, TimeRange, formatTimeFromMs } from "./timeRangeUtils";
+import { parseEmbedSrc, formatTimeFromMs } from "./timeRangeUtils";
 
 export interface WhisperEmbedRenderer {
   render: (container: HTMLElement, src: string) => Promise<() => void>;
