@@ -12,6 +12,7 @@ export interface VttSection {
   part: string;
   words: VttWord[];
   speaker?: string;
+  cueId?: string;
 }
 
 // Constants for regex patterns and magic strings
@@ -98,6 +99,7 @@ function parseVttLines(lines: string[]): Omit<VttSection, "words">[] {
   const sections: Array<Omit<VttSection, "words">> = [];
   let current: Partial<Omit<VttSection, "words">> = {};
   let inSection = false;
+  let pendingCueId: string | undefined;
 
   for (const line of lines) {
     if (isEmptyLine(line)) {
@@ -107,6 +109,7 @@ function parseVttLines(lines: string[]): Omit<VttSection, "words">[] {
         current = {};
         inSection = false;
       }
+      pendingCueId = undefined;
       continue;
     }
 
@@ -114,7 +117,25 @@ function parseVttLines(lines: string[]): Omit<VttSection, "words">[] {
       // Start of a new section
       inSection = true;
       const timestamp = parseTimestamp(line);
-      current = { ...timestamp, part: "", speaker: undefined };
+      current = {
+        ...timestamp,
+        part: "",
+        speaker: undefined,
+        cueId: pendingCueId,
+      };
+      pendingCueId = undefined;
+    } else if (!inSection) {
+      // Line before timestamp - could be a cue identifier
+      // Cue identifiers are typically numbers or alphanumeric strings
+      // that appear on their own line before the timestamp
+      const trimmedLine = line.trim();
+      if (
+        trimmedLine &&
+        !trimmedLine.startsWith("NOTE") &&
+        !trimmedLine.startsWith("STYLE")
+      ) {
+        pendingCueId = trimmedLine;
+      }
     } else if (inSection) {
       // Content line within a section
       const { speaker, cleanText } = extractSpeaker(line);
