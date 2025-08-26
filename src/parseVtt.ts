@@ -11,11 +11,13 @@ export interface VttSection {
   end: number;
   part: string;
   words: VttWord[];
+  speaker?: string;
 }
 
 // Constants for regex patterns and magic strings
 const HTML_TAG_REGEX = /<\/?[^>]+(>|$)/g;
 const TIME_MARKER_REGEX = /(<([0-9:.>]+)>)/gi;
+const SPEAKER_TAG_REGEX = /<v\s+([^>]+)>/i;
 const TIME_SEPARATOR = "-->";
 const TIME_MARKER_PREFIX = "==";
 const EMPTY_STRINGS = new Set(["", " ", "##"]);
@@ -23,6 +25,17 @@ const EMPTY_STRINGS = new Set(["", " ", "##"]);
 // Utility functions
 function stripHtmlTags(text: string): string {
   return text.replace(HTML_TAG_REGEX, "");
+}
+
+function extractSpeaker(text: string): { speaker?: string; cleanText: string } {
+  const speakerMatch = text.match(SPEAKER_TAG_REGEX);
+  if (speakerMatch) {
+    return {
+      speaker: speakerMatch[1].trim(),
+      cleanText: text.replace(SPEAKER_TAG_REGEX, "").trim(),
+    };
+  }
+  return { cleanText: text };
 }
 
 function isEmptyLine(line: string): boolean {
@@ -99,10 +112,11 @@ function parseVttLines(lines: string[]): Omit<VttSection, "words">[] {
       }
 
       const timestamp = parseTimestamp(line);
-      current = { ...timestamp, part: "" };
+      current = { ...timestamp, part: "", speaker: undefined };
     } else if (inSection) {
       const isLastLine = index === lines.length - 1;
-      const cleanLine = stripHtmlTags(line);
+      const { speaker, cleanText } = extractSpeaker(line);
+      const cleanLine = stripHtmlTags(cleanText);
 
       // Skip duplicate lines
       if (
@@ -112,11 +126,17 @@ function parseVttLines(lines: string[]): Omit<VttSection, "words">[] {
         continue;
       }
 
-      current.part = current.part ? `${current.part} ${line}` : line;
+      // Set speaker if found and not already set
+      if (speaker && !current.speaker) {
+        current.speaker = speaker;
+      }
+
+      // Use cleanText instead of original line to remove speaker tags
+      current.part = current.part ? `${current.part} ${cleanText}` : cleanText;
 
       if (isLastLine || sections.length === 0) {
         sections.push({ ...current } as Omit<VttSection, "words">);
-        current = { part: "" };
+        current = { part: "", speaker: undefined };
       }
     }
   }
