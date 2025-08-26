@@ -32,7 +32,7 @@ export default class MyPlugin extends Plugin {
   async onload() {
     await this.loadSettings();
 
-    this.registerExtensions(["whisper"], WHISPER_VIEW_TYPE);
+    this.registerExtensions(["whisper", "vtt"], WHISPER_VIEW_TYPE);
     this.registerView(WHISPER_VIEW_TYPE, (leaf) => new WhisperView(leaf));
 
     initializeWhisperPostProcessor(this.app);

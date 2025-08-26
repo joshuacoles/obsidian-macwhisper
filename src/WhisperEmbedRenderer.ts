@@ -1,14 +1,16 @@
 import { App, TFile } from "obsidian";
 import { render } from "solid-js/web";
 import SolidView from "./solidView";
-import * as whisperFile from "./whisperFile";
+import { parseTranscriptFile } from "./transcriptFile";
 import { parseEmbedSrc, formatTimeFromMs } from "./timeRangeUtils";
 
-export interface WhisperEmbedRenderer {
+export interface TranscriptEmbedRenderer {
   render: (container: HTMLElement, src: string) => Promise<() => void>;
 }
 
-export function createWhisperEmbedRenderer(app: App): WhisperEmbedRenderer {
+export function createTranscriptEmbedRenderer(
+  app: App,
+): TranscriptEmbedRenderer {
   return {
     async render(container: HTMLElement, src: string): Promise<() => void> {
       try {
@@ -18,27 +20,31 @@ export function createWhisperEmbedRenderer(app: App): WhisperEmbedRenderer {
         // Resolve the file path to a TFile
         const file = app.metadataCache.getFirstLinkpathDest(filePath, "");
 
-        if (!file || !(file instanceof TFile) || file.extension !== "whisper") {
+        if (
+          !file ||
+          !(file instanceof TFile) ||
+          !["whisper", "vtt"].includes(file.extension)
+        ) {
           container.innerHTML =
-            '<div style="padding: 8px; color: var(--text-error);">Invalid whisper file</div>';
+            '<div style="padding: 8px; color: var(--text-error);">Invalid transcript file (must be .whisper or .vtt)</div>';
           return () => {};
         }
 
         // Create loading indicator
+        const fileType = file.extension === "vtt" ? "VTT" : "whisper";
         const loadingText = timeRange
-          ? `Loading whisper file (${formatTimeFromMs(timeRange.start)}-${formatTimeFromMs(timeRange.end)})...`
-          : "Loading whisper file...";
+          ? `Loading ${fileType} file (${formatTimeFromMs(timeRange.start)}-${formatTimeFromMs(timeRange.end)})...`
+          : `Loading ${fileType} file...`;
         container.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--text-muted);">${loadingText}</div>`;
 
-        // Read and parse the whisper file
-        const contents = await app.vault.readBinary(file);
-        const whisperFileData = await whisperFile.parse(contents);
+        // Parse the transcript file (handles both whisper and VTT)
+        const transcriptFileData = await parseTranscriptFile(file, app.vault);
 
         // Clear container and render SolidJS component
         container.empty();
 
         // Create a promise wrapper for the component
-        const whisperFilePromise = Promise.resolve(whisperFileData);
+        const transcriptFilePromise = Promise.resolve(transcriptFileData);
 
         // Style the container to match embed styling
         container.style.cssText = `
@@ -53,16 +59,20 @@ export function createWhisperEmbedRenderer(app: App): WhisperEmbedRenderer {
 
         // Render the SolidJS component
         const dispose = render(
-          () => SolidView({ whisperFile: whisperFilePromise, timeRange }),
+          () => SolidView({ transcriptFile: transcriptFilePromise, timeRange }),
           container,
         );
 
         return dispose;
       } catch (error) {
-        console.error("Error rendering whisper embed:", error);
-        container.innerHTML = `<div style="padding: 8px; color: var(--text-error);">Error loading whisper file: ${error.message}</div>`;
+        console.error("Error rendering transcript embed:", error);
+        container.innerHTML = `<div style="padding: 8px; color: var(--text-error);">Error loading transcript file: ${error.message}</div>`;
         return () => {};
       }
     },
   };
 }
+
+// Keep the old export for backwards compatibility
+export type WhisperEmbedRenderer = TranscriptEmbedRenderer;
+export const createWhisperEmbedRenderer = createTranscriptEmbedRenderer;

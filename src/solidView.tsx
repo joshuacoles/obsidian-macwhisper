@@ -6,12 +6,12 @@ import {
   createEffect,
   createMemo,
 } from "solid-js";
-import { WhisperFile, Transcript } from "./whisperFile";
+import { TranscriptFile, Transcript } from "./transcriptFile";
 import { TimeRange, formatTimeFromMs } from "./timeRangeUtils";
 import styles from "./styles.module.css";
 
 interface SolidViewProps {
-  whisperFile: Promise<WhisperFile>;
+  transcriptFile: Promise<TranscriptFile>;
   timeRange?: TimeRange;
 }
 
@@ -22,14 +22,14 @@ export default function SolidView(props: SolidViewProps) {
   const [activeTranscriptIndex, setActiveTranscriptIndex] =
     createSignal<number>(-1);
 
-  const [whisperData] = createResource(
-    () => props.whisperFile,
-    (promise: Promise<WhisperFile>) => promise,
+  const [transcript] = createResource(
+    () => props.transcriptFile,
+    (promise: Promise<TranscriptFile>) => promise,
   );
 
   // Filter transcripts based on time range
   const filteredTranscripts = createMemo(() => {
-    const data = whisperData();
+    const data = transcript();
     if (!data || !props.timeRange) {
       return data?.metadata.transcripts || [];
     }
@@ -42,8 +42,15 @@ export default function SolidView(props: SolidViewProps) {
     );
   });
 
-  const createAudioUrl = (whisperFile: WhisperFile) => {
-    const blob = new Blob([whisperFile.originalAudio], { type: "audio/wav" });
+  const createAudioUrl = (transcriptFile: TranscriptFile) => {
+    if (!transcriptFile.originalAudio) {
+      return undefined;
+    }
+
+    const blob = new Blob([transcriptFile.originalAudio], {
+      type: "audio/wav",
+    });
+
     return URL.createObjectURL(blob);
   };
 
@@ -89,7 +96,7 @@ export default function SolidView(props: SolidViewProps) {
   };
 
   const handleTimeUpdate = () => {
-    if (!audioRef || !whisperData()) return;
+    if (!audioRef || !transcript()) return;
 
     const transcripts = filteredTranscripts();
     const newIndex = findActiveTranscriptIndex(
@@ -105,7 +112,7 @@ export default function SolidView(props: SolidViewProps) {
   // Set up audio event listeners when audio element becomes available
   createEffect(() => {
     const audio = audioRef;
-    const data = whisperData();
+    const data = transcript();
 
     if (audio && data) {
       console.log("Setting up timeupdate listener on audio element");
@@ -151,25 +158,25 @@ export default function SolidView(props: SolidViewProps) {
 
   return (
     <div class={styles.container}>
-      {whisperData.loading && (
+      {transcript.loading && (
         <p class={styles.loadingText}>Loading whisper file...</p>
       )}
-      {whisperData.error && (
+      {transcript.error && (
         <p class={styles.errorText}>
-          Error loading file: {whisperData.error.message}
+          Error loading file: {transcript.error.message}
         </p>
       )}
 
-      {whisperData() && (
+      {transcript() && (
         <>
           <div class={styles.headerSection}>
             <div class={styles.metadata}>
               <span>
                 <strong>Language:</strong>{" "}
-                {whisperData()!.metadata.detectedLanguageRaw}
+                {transcript()!.metadata.detectedLanguageRaw}
               </span>
               <span>
-                <strong>Model:</strong> {whisperData()!.metadata.modelEngine}
+                <strong>Model:</strong> {transcript()!.metadata.modelEngine}
               </span>
               {props.timeRange ? (
                 <>
@@ -187,20 +194,20 @@ export default function SolidView(props: SolidViewProps) {
                 <span>
                   <strong>Duration:</strong>{" "}
                   {formatTime(
-                    getTotalDuration(whisperData()!.metadata.transcripts),
+                    getTotalDuration(transcript()!.metadata.transcripts),
                   )}
                 </span>
               )}
               <span>
                 <strong>Segments:</strong> {filteredTranscripts().length}
                 {props.timeRange &&
-                  ` (of ${whisperData()!.metadata.transcripts.length})`}
+                  ` (of ${transcript()!.metadata.transcripts.length})`}
               </span>
             </div>
             <audio
               ref={audioRef}
               controls
-              src={whisperData() ? createAudioUrl(whisperData()!) : undefined}
+              src={transcript() ? createAudioUrl(transcript()!) : undefined}
               class={styles.audioPlayer}
             />
           </div>

@@ -1,11 +1,11 @@
 import { EditableFileView, TFile, type WorkspaceLeaf } from "obsidian";
 import { render } from "solid-js/web";
 import SolidView from "./solidView";
-import * as whisperFile from "./whisperFile";
+import { parseTranscriptFile } from "./transcriptFile";
 
-export const WHISPER_VIEW_TYPE = "whisper-view";
+export const TRANSCRIPT_VIEW_TYPE = "transcript-view";
 
-export class WhisperView extends EditableFileView {
+export class TranscriptView extends EditableFileView {
   private dispose: (() => void) | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
@@ -13,21 +13,19 @@ export class WhisperView extends EditableFileView {
   }
 
   getViewType() {
-    return WHISPER_VIEW_TYPE;
+    return TRANSCRIPT_VIEW_TYPE;
   }
 
   getDisplayText() {
     if (this.file) {
-      // Extract filename from the whisper file metadata when available
-      // For now, use the file basename as fallback
       return this.file.basename;
     }
 
-    return "Whisper";
+    return "Transcript";
   }
 
   async onLoadFile(file: TFile): Promise<void> {
-    console.log("Loading file", file);
+    console.log("Loading transcript file", file);
     this.renderSolidView(file);
   }
 
@@ -40,13 +38,11 @@ export class WhisperView extends EditableFileView {
     const container = this.containerEl.children[1];
     container.empty();
 
-    // Create a promise for the whisper file data
-    const whisperFilePromise = this.app.vault
-      .readBinary(file)
-      .then((contents) => whisperFile.parse(contents));
+    // Create a promise for the transcript file data (handles both whisper and VTT)
+    const transcriptFile = parseTranscriptFile(file, this.app.vault);
 
     this.dispose = render(
-      () => SolidView({ whisperFile: whisperFilePromise }),
+      () => SolidView({ transcriptFile }),
       container,
     );
   }
@@ -58,3 +54,7 @@ export class WhisperView extends EditableFileView {
     }
   }
 }
+
+// Keep the old export for backwards compatibility
+export const WHISPER_VIEW_TYPE = TRANSCRIPT_VIEW_TYPE;
+export const WhisperView = TranscriptView;
