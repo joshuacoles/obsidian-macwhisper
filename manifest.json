@@ -1,7 +1,7 @@
 {
   "id": "obsidian-macwhisper",
   "name": "MacWhisper",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "minAppVersion": "1.6.7",
   "description": "View and embed MacWhisper .whisper files in Obsidian with audio playback and transcript display.",
   "author": "Joshua Coles",
