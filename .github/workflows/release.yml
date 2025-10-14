@@ -1,0 +1,57 @@
+name: Release Obsidian Plugin
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build plugin
+        run: bun run build
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Verify version consistency
+        run: |
+          MANIFEST_VERSION=$(jq -r '.version' dist/obsidian-macwhisper/manifest.json)
+          TAG_VERSION=${{ steps.get_version.outputs.VERSION }}
+
+          # Remove 'v' prefix from tag if present
+          TAG_VERSION_CLEAN=${TAG_VERSION#v}
+
+          if [ "$MANIFEST_VERSION" != "$TAG_VERSION_CLEAN" ]; then
+            echo "Error: manifest.json version ($MANIFEST_VERSION) does not match tag version ($TAG_VERSION_CLEAN)"
+            exit 1
+          fi
+
+          echo "Version consistency check passed: $MANIFEST_VERSION"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/obsidian-macwhisper/main.js
+            dist/obsidian-macwhisper/manifest.json
+            dist/obsidian-macwhisper/styles.css
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

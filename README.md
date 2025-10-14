@@ -1,56 +1,69 @@
-# Obsidian Plugin Template
+# Obsidian MacWhisper Plugin
 
-This is a template for Obsidian plugins based on the first-party [Obsidian sample plugin](https://github.com/obsidianmd/obsidian-sample-plugin) that aims to be a modern, slimmer replacement with as little impact to your dev setup as possible. Specifically, its goals are to:
+View and embed MacWhisper `.whisper` files in Obsidian with audio playback and transcript display.
 
-- Use fewer tools, replacing `node`, `tsc` and `esbuild` with [`bun`](https://bun.sh/) and removing the `git` dependency in version bumping for those who use [`jj`](https://github.com/jj-vcs/jj) or other VCS tools.
-- Make getting started with plugin development as low-friction as possible by adding a test vault with [hot reload](https://github.com/pjeby/hot-reload) and a script to symlink your plugin into it.
-- Add version determinism via [mise](https://mise.jdx.dev/).
+## Features
 
-> [!TIP]
-> If you’d like a way to sync, share your Obsidian vaults/notes with others, and edit them on the web check out my other project, [screen.garden](https://screen.garden).
+- Open `.whisper` files directly in Obsidian
+- Embed whisper files in markdown notes with `![[file.whisper]]`
+- Time-range filtered transcripts with `![[file.whisper#MM:SS-MM:SS]]` syntax
+- Audio playback synchronized with transcript display
+- Works in both Live Preview and Reading modes
 
-## Initial Setup
+## Installation
+
+### Via BRAT (Recommended for Beta Testing)
+
+1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat) from the Obsidian Community Plugins
+2. Open the command palette and run `BRAT: Add a beta plugin for testing`
+3. Enter this repository URL: `https://github.com/joshuacoles/obsidian-macwhisper`
+4. Enable the plugin in Settings → Community Plugins
+
+BRAT will keep the plugin automatically updated with the latest releases.
+
+### Manual Installation
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/joshuacoles/obsidian-macwhisper/releases/latest)
+2. Create a folder in your vault: `VaultFolder/.obsidian/plugins/obsidian-macwhisper/`
+3. Copy the downloaded files into that folder
+4. Enable the plugin in Settings → Community Plugins
+
+## Development Setup
 
 Follow these steps to get your local dev loop going:
 
 1. [Install mise](https://mise.jdx.dev/getting-started.html)
-2. `mise install` (to install bun)
-3. `bun install` (to install deps)
-4. Edit `package.json`, `manifest.json`, `main.ts` to rename the plugin.
-
-After that you can `bun run dev` to build and watch your source, which should go in `src/`.
+2. Run `mise install` to install Bun
+3. Run `bun install` to install dependencies
+4. Run `bun run dev` to build and watch for changes
 
 To test your plugin in Obsidian with hot-reloading:
 
-1. `bun run link` to symlink your built plugin into the test vault.
-2. Add `./test-vault` to Obsidian as a new vault.
-3. In your test vault, enable community plugins and enable your plugin.
+1. Run `bun run link` to symlink your built plugin into the test vault
+2. Add `./test-vault` to Obsidian as a new vault
+3. Enable community plugins and activate the MacWhisper plugin
 
-After that any changes to your plugin source will cause it to reload in Obsidian.
-
-The rest of this README is identical to [the sample template’s](https://github.com/obsidianmd/obsidian-sample-plugin/blob/master/README.md) with small changes and deletions to reflect the new tooling.
+Any changes to your plugin source will automatically reload in Obsidian.
 
 ## Releasing new releases
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+1. Update the version in `package.json` to your new version number (e.g., `1.0.1`)
+2. Run `bun run version` to update `manifest.json` and `versions.json`
+3. Commit the changes
+4. Create and push a git tag with the version number (e.g., `git tag 1.0.1 && git push origin 1.0.1`)
 
-> You can simplify the version bump process by running `bun run verson` after updating your version in package.json.
-> The command will bump version in `manifest.json` and add the entry for the new version to `versions.json`
+The GitHub Actions workflow will automatically:
+- Build the plugin
+- Verify version consistency
+- Create a GitHub release with `main.js`, `manifest.json`, and `styles.css` attached
+- BRAT users will be automatically notified of the update
 
 ## Adding your plugin to the community plugin list
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines)
+- Publish an initial version
+- Make sure you have a `README.md` file in the root of your repo
+- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin
 
 ## Improve code quality with eslint (optional)
 

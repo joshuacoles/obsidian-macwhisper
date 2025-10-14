@@ -1,5 +1,5 @@
 {
-  "name": "obsidian-plugin-template",
+  "name": "obsidian-macwhisper",
   "version": "1.0.0",
   "main": "main.js",
   "license": "MIT",
@@ -18,7 +18,7 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+  "description": "View and embed MacWhisper .whisper files in Obsidian with audio playback and transcript display.",
   "scripts": {
     "lint": "bun x eslint src",
     "dev": "bun run scripts/build.ts --dev",

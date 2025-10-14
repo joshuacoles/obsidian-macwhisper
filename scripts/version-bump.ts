@@ -13,7 +13,7 @@ const manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
 const { minAppVersion } = manifest;
 if (manifest.version !== targetVersion) {
   manifest.version = targetVersion;
-  writeFileSync("manifest.json", JSON.stringify(manifest, null, "\t"));
+  writeFileSync("manifest.json", JSON.stringify(manifest, null, "  ") + "\n");
   console.log(`✅ Updated manifest.json to version ${targetVersion}`);
   dirty = true;
 }
@@ -22,7 +22,7 @@ if (manifest.version !== targetVersion) {
 const versions = JSON.parse(readFileSync("versions.json", "utf8"));
 if (!versions[targetVersion] || versions[targetVersion] !== minAppVersion) {
   versions[targetVersion] = minAppVersion;
-  writeFileSync("versions.json", JSON.stringify(versions, null, "\t"));
+  writeFileSync("versions.json", JSON.stringify(versions, null, "  ") + "\n");
   console.log(
     `✅ Added ${targetVersion} with min app version of ${minAppVersion} to versions.json`,
   );
