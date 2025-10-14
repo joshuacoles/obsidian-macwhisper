@@ -8,5 +8,5 @@ If your plugin does not need CSS, delete this file.
 */
 
 .hey {
-    marquee: true;
+  marquee: true;
 }

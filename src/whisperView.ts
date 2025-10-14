@@ -41,10 +41,7 @@ export class TranscriptView extends EditableFileView {
     // Create a promise for the transcript file data (handles both whisper and VTT)
     const transcriptFile = parseTranscriptFile(file, this.app.vault);
 
-    this.dispose = render(
-      () => SolidView({ transcriptFile }),
-      container,
-    );
+    this.dispose = render(() => SolidView({ transcriptFile }), container);
   }
 
   async onClose() {

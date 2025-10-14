@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This project uses Bun instead of Node.js for all tooling:
 
 - `bun run dev` - Build and watch source files with hot reload
-- `bun run build` - Production build 
+- `bun run build` - Production build
 - `bun run link` - Symlink built plugin into test vault
 - `bun run lint` - Run ESLint
 - `bun run format` - Run Prettier formatting
@@ -29,11 +29,13 @@ This is an Obsidian plugin for handling MacWhisper `.whisper` files, which are Z
 ### Core Components
 
 **Whisper File Handling**:
+
 - `whisperFile.ts` - Parses .whisper ZIP files into structured data
 - `WhisperView.ts` - Main file view for opening .whisper files directly
 - `solidView.tsx` - SolidJS component rendering transcripts with audio playback
 
 **Embed System** (dual-mode architecture):
+
 - `WhisperEditorExtension.ts` - CodeMirror 6 ViewPlugin for live preview mode
 - `WhisperMarkdownPostProcessor.ts` - Obsidian post processor for reading mode
 - `WhisperEmbedRenderer.ts` - Shared renderer that creates SolidJS components
@@ -41,27 +43,32 @@ This is an Obsidian plugin for handling MacWhisper `.whisper` files, which are Z
 ### Embed Syntax
 
 The plugin supports embedding whisper files in markdown:
+
 - `![[file.whisper]]` - Full transcript
 - `![[file.whisper#MM:SS-MM:SS]]` - Time range filtered transcript (e.g., `#1:30-3:45`)
 
 ### Key Architecture Patterns
 
 **Dual Rendering System**: The plugin handles embeds in both Obsidian modes:
+
 - **Live Preview**: Uses CodeMirror 6 ViewPlugin with MutationObserver to detect and replace `.internal-embed.file-embed` elements
 - **Reading Mode**: Uses Obsidian's markdown post processor API to replace embed elements during rendering
 - Both use the same `WhisperEmbedRenderer` for consistency
 
 **Time Range Filtering**:
+
 - `timeRangeUtils.ts` provides parsing utilities for `MM:SS-MM:SS` syntax
 - Filtering is applied at the SolidJS component level, not file parsing level
 - Transcripts that overlap with the time range are included (not exact boundaries)
 
 **SolidJS Integration**:
+
 - Uses `solid-js/web` render function to mount components in DOM containers
 - Components return dispose functions for proper cleanup
 - The editor extension tracks dispose functions in a Map for memory management
 
-**External Dependencies**: 
+**External Dependencies**:
+
 - All `@codemirror/*` packages are marked as external in build config (line 34-44 in `scripts/build.ts`)
 - This ensures the plugin uses Obsidian's bundled CodeMirror 6 classes instead of conflicting versions
 
